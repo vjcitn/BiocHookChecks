@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+"""
+Enable post receive hook for Bioconductor packages for RSS feeds.
+"""
+
+import fileinput
+from new_package_build import package_start_build
+from rss_feed import write_rss_feed
+
+# Global variables used by post-recieve hook
+ZERO_COMMIT = "0000000000000000000000000000000000000000"
+
+
+def apply_hooks():
+    """Apply hooks for post-receive hooks.
+
+    Hooks are applied in order.
+    """
+    for line in fileinput.input():
+        std_input = line.split(" ")
+        oldrev, newrev, refname = [item.strip() for item in std_input]
+        # Check for zero commit, check branch deletions
+        # also, avoid new package additions
+        if ZERO_COMMIT in (oldrev, newrev):
+            continue
+        # insert new hooks here
+        package_start_build(oldrev, newrev, refname)
+        # Pass in 'length' as an optional argument
+        # default 'length' of feed is 499
+        write_rss_feed(oldrev, newrev, refname, length=499)
+    return
+
+
+if __name__ == "__main__":
+    # post-receive hooks are applied uniformly across all packages.
+    apply_hooks()
